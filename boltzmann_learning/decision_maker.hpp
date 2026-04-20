@@ -3,7 +3,7 @@
  * @description     DecisionMaker Abstract Template
  * @author          nicewang <wangxiaonannice@gmail.com>
  * @createTime      2026-04-14
- * @lastModified    2026-04-14
+ * @lastModified    2026-04-21
  * Copyright Xiaonan (Nice) Wang. All rights reserved
 */
 
@@ -26,9 +26,9 @@ class DecisionMaker {
 public:
     // Struct for returning multiple values from get_action.
     struct ActionInfo {
-        A action;
-        std::vector<double> probabilities;
-        double entropy;
+        A action;                           // Action itself
+        std::vector<double> probabilities;  // Probability distribution used to select action
+        double entropy;                     // Distribution's entropy
     };
 
     /**
