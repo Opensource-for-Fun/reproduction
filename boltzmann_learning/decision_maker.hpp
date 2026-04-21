@@ -13,24 +13,22 @@
 #include <map>
 #include <variant>
 
-using namespace std;
-
 template <typename M>
-using MeasurementInput = variant<M, map<M, double>>;
+using MeasurementInput = std::variant<M, std::map<M, double>>;
 
 /**
  * @brief Abstract base class for decision makers
- * @tparam A The type representing an Action (e.g., int, string)
- * @tparam M The type representing a Measurement (e.g., int, string)
+ * @tparam A The type representing an Action (e.g., int, std::string)
+ * @tparam M The type representing a Measurement (e.g., int, std::string)
  */
 template <typename A, typename M>
 class DecisionMaker {
 public:
     // Struct for returning multiple values from get_action.
     struct ActionInfo {
-        A action;                      // Action itself
-        vector<double> probabilities;  // Probability distribution used to select action
-        double entropy;                // Distribution's entropy
+        A action;                           // Action itself
+        std::vector<double> probabilities;  // Probability distribution used to select action
+        double entropy;                     // Distribution's entropy
     };
 
     /**
@@ -55,7 +53,7 @@ public:
      */
     virtual void update_energies(
         const MeasurementInput<M>& measurement, 
-        const map<A, double>& costs, 
+        const std::map<A, double>& costs, 
         double time = 0.0
     ) = 0;
 };

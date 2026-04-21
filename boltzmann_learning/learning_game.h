@@ -27,8 +27,8 @@ extern const bool DEBUG;
 
 /**
  * @brief Class to learn no-regret policy
- * @tparam A The type representing an Action (e.g., int, string)
- * @tparam M The type representing a Measurement (e.g., int, string)
+ * @tparam A The type representing an Action (e.g., int, std::string)
+ * @tparam M The type representing a Measurement (e.g., int, std::string)
  */
 template <typename A, typename M>
 class LearningGame : public DecisionMaker<A, M> {
@@ -77,12 +77,12 @@ public:
      *          Entropy for infinite measurement case is particularly slow to compute
      */
     LearningGame(
-        vector<A> action_set,
-        vector<M> measurement_set = {},
+        std::vector<A> action_set,
+        std::vector<M> measurement_set = {},
         bool finite_measurements = true,
         double decay_rate = 0.0,
         double inverse_temperature = 0.01,
-        optional<unsigned int> seed = nullopt,
+        std::optional<unsigned int> seed = std::nullopt,
         double time_bound = 1.0,
         bool compute_entropy = true
     );
@@ -101,7 +101,7 @@ public:
      * - probabilities (vector<double>): probability distribution
      * - entropy (double): distribution's entropy
      */
-    pair<vector<double>, double> get_Boltzmann_distribution(
+    std::pair<std::vector<double>, double> get_Boltzmann_distribution(
         const MeasurementInput<M>& measurement, 
         double time = 0.0
     );
@@ -129,7 +129,7 @@ public:
      */
     void update_energies(
         const MeasurementInput<M>& measurement, 
-        const map<A, double>& costs, 
+        const std::map<A, double>& costs, 
         double time = 0.0
     ) override;
 
@@ -147,20 +147,20 @@ public:
      *          E[y][a,time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l)) cost[y,a,time_l]
      * where t_k is the time at which we got the last update of the energies.
      */
-    map<M, map<A, double>> get_energy() const;
+    std::map<M, std::map<A, double>> get_energy() const;
 
 private:
-    vector<A> _action_set;
+    std::vector<A> _action_set;
     size_t m_actions;
-    vector<M> _measurement_set;
+    std::vector<M> _measurement_set;
     bool finite_measurements;
     double decay_rate;
     double inverse_temperature;
-    mt19937 rng;
+    std::mt19937 rng;
     double time_bound;
     bool compute_entropy;
 
-    map<M, map<A, double>> energy;
+    std::map<M, std::map<A, double>> energy;
     double time_update;
     double total_cost;
     double normalization_sum;
@@ -174,6 +174,6 @@ private:
  * @param p vector with probabilities, which must add up to 1.0
  * @return random integer from 0 to len(p)-1
  */
-int get_random_integer(mt19937& rng_engine, const vector<double>& p);
+int get_random_integer(std::mt19937& rng_engine, const std::vector<double>& p);
 
 #endif // LEARNING_GAME_H
