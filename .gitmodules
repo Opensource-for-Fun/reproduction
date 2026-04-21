@@ -1,0 +1,3 @@
+[submodule "boltzmann_learning/source_py"]
+	path = boltzmann_learning/source_py
+	url = git@github.com:Opensource-for-Fun/boltzmann-learning.git

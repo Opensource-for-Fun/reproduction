@@ -99,7 +99,7 @@ public:
      * Defaults to 0.0.
      * @return A pair containing:
      * - probabilities (vector<double>): probability distribution
-     * - entropy (doyble): distribution's entropy
+     * - entropy (double): distribution's entropy
      */
     pair<vector<double>, double> get_Boltzmann_distribution(
         const MeasurementInput<M>& measurement, 
