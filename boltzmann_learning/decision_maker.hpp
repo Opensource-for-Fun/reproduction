@@ -28,9 +28,9 @@ class DecisionMaker {
 public:
     // Struct for returning multiple values from get_action.
     struct ActionInfo {
-        A action;                           // Action itself
+        A action;                      // Action itself
         vector<double> probabilities;  // Probability distribution used to select action
-        double entropy;                     // Distribution's entropy
+        double entropy;                // Distribution's entropy
     };
 
     /**
