@@ -47,6 +47,7 @@ LearningGame<A, M>::LearningGame(
     time_bound(time_bound),
     compute_entropy(compute_entropy) 
 {
+    // parameters
     m_actions = _action_set.size();
 
     // If measurement set is not provided, initialize with a default constructed element
