@@ -100,8 +100,16 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
     const MeasurementInput<M>& measurement_input, 
     double time
 ) {
-    // Discount the energy due to time passed since we last updated our energy
+    // compute Boltzmann distribution
+    
+    // From the equations it may not be immediately clear why the decay is included here. 
+    // It is because at the time of selecting actions, 
+    // we need to discount the energy due to time passed since we last updated our energy.
+    //    |
+    //    v
+    // Decay for discounting the energy
     double decay = exp(-decay_rate * (time - time_update));
+    
     vector<double> probabilities;
     double entropy = 0.0;
 

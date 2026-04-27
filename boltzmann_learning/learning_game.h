@@ -57,7 +57,7 @@ public:
      * In the continuous case (False), the measurements will be probabilities associated with the classes in
      * measurement_set.
      * Defaults to true.
-     * @param decay_rate (optional) Exponential decay rate for information in units of 1/time.
+     * @param decay_rate (optional) Exponential decay rate for information in units of 1/time. a.k.a lambda
      * Specifically, information decays as
      *                         exp(-decay_rate * time)
      *                         (0.0 means no decay).
@@ -95,8 +95,8 @@ public:
 
     /**
      * @brief Returns a Boltzmann distribution
-     * @param measurement which must be an element of measurement_set
-     * @param time for the desired distribution. 
+     * @param measurement which must be an element of _measurement_set
+     * @param time (optional) for the desired distribution. 
      * Defaults to 0.0.
      * @return A pair containing:
      * - probabilities (vector<double>): probability distribution
@@ -146,7 +146,7 @@ public:
      * Energy associated with action a and measurements y,
      *      Each energy is of the form
      *          E[y][a,time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l)) cost[y,a,time_l]
-     * where t_k is the time at which we got the last update of the energies.
+     *      where t_k is the time at which we got the last update of the energies.
      */
     std::map<M, std::map<A, double>> get_energy() const;
 
@@ -155,7 +155,7 @@ private:
     size_t m_actions;                        // length of action set
     std::vector<M> _measurement_set;         // set of all possible measurements
     bool finite_measurements;                // indicates whether the measurements are finite/discrete or continuous
-    double decay_rate;                       // exponential decay rate for information in units of 1/time
+    double decay_rate;                       // exponential decay rate for information in units of 1/time, a.k.a lambda
     double inverse_temperature;              // inverse of thermodynamic temperature for the Boltzmann distribution
     std::mt19937 rng;                        // random number generator to select actions
     double time_bound;                       // short term bound on the time gap between samples (referred to as \mu_0 in the paper)
