@@ -10,6 +10,9 @@
 #include "learning_game.h"
 
 #include <limits>
+#include <cmath>
+#include <variant>
+#include <stdexcept>
 
 
 // Define the extern DEBUG variable declared in the header
@@ -108,19 +111,19 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
     //    |
     //    v
     // Decay for discounting the energy
-    double decay = exp(-decay_rate * (time - time_update));
+    double decay = std::exp(-decay_rate * (time - time_update));
     
     vector<double> probabilities;
     double entropy = 0.0;
 
     if (finite_measurements) {
-        if (!holds_alternative<M>(measurement_input)) {
-            throw invalid_argument("finite_measurements is true, but map provided instead of single measurement.");
+        if (!std::holds_alternative<M>(measurement_input)) {
+            throw std::invalid_argument("finite_measurements is true, but map provided instead of single measurement.");
         }
-        M measurement = get<M>(measurement_input);
+        M measurement = std::get<M>(measurement_input);
 
         vector<double> energies_array;
-        double min_energy = numeric_limits<double>::infinity();
+        double min_energy = std::numeric_limits<double>::infinity();
         
         for (const auto& a : _action_set) {
             double e = decay * energy[measurement][a];
@@ -130,25 +133,25 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             }
         }
 
-        vector<double> exponent;
+        std::vector<double> exponent;
         double total = 0.0;
         for (double e : energies_array) {
             double exp_val = -inverse_temperature * (e - min_energy);
             exponent.push_back(exp_val);
-            double p = exp(exp_val);
+            double p = std::exp(exp_val);
             probabilities.push_back(p);
             total += p;
         }
 
-        // Compute entropy safely
+        // Compute entropy safely (even if some probabilities become zero)
         if (compute_entropy) {
             double dot_product = 0.0;
             for (size_t i = 0; i < probabilities.size(); ++i) {
                 dot_product += probabilities[i] * exponent[i];
             }
-            entropy = -dot_product / total + log(total);
+            entropy = -dot_product / total + std::log(total);
         } else {
-            entropy = numeric_limits<double>::quiet_NaN();
+            entropy = std::numeric_limits<double>::quiet_NaN();
         }
 
         // Normalize probability
@@ -157,8 +160,8 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         }
 
     } else {
-        if (!holds_alternative<std::map<M, double>>(measurement_input)) {
-            throw invalid_argument("finite_measurements is false, but single measurement provided instead of map.");
+        if (!std::holds_alternative<std::map<M, double>>(measurement_input)) {
+            throw srd::invalid_argument("finite_measurements is false, but single measurement provided instead of map.");
         }
         auto measurement = get<std::map<M, double>>(measurement_input);
 
@@ -175,8 +178,8 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         }
 
         // energies_array size: num_actions x num_measurements
-        vector<vector<double>> energies_array(_action_set.size(), vector<double>(_measurement_set.size()));
-        vector<double> min_energy(_measurement_set.size(), numeric_limits<double>::infinity());
+        std::vector<std::vector<double>> energies_array(_action_set.size(), vector<double>(_measurement_set.size()));
+        std::vector<double> min_energy(_measurement_set.size(), numeric_limits<double>::infinity());
 
         for (size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
             for (size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
@@ -188,7 +191,7 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             }
         }
 
-        vector<vector<double>> pbar_a_c(_action_set.size(), vector<double>(_measurement_set.size()));
+        std::vector<std::vector<double>> pbar_a_c(_action_set.size(), std::vector<double>(_measurement_set.size()));
         double global_prob_sum = 0.0;
 
         for (size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
@@ -236,11 +239,11 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             entropy = 0.0;
             for (double p : probabilities) {
                 if (p > 0.0) {
-                    entropy -= p * log(p);
+                    entropy -= p * std::log(p);
                 }
             }
         } else {
-            entropy = numeric_limits<double>::quiet_NaN();
+            entropy = std::numeric_limits<double>::quiet_NaN();
         }
     }
 

@@ -14,10 +14,8 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <cmath>
 #include <random>
 #include <numeric>
-#include <stdexcept>
 #include <iomanip>
 #include <optional>
 #include <string>
