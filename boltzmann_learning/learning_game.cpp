@@ -81,24 +81,14 @@ void LearningGame<A, M>::reset() {
             energy[y][a] = 0.0;
         }
     }
-    // energy[y][a]: energy associated with action a and measurements y
-    //      E[y][a,time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l)) cost[y,a,time_l]
-    //      where t_k is the time at which we got the last update of the energies.
 
     // initialize time of last update for the energies
     time_update = 0.0;
-    // time_update: time at which the energies were updates last. 
-    // Only needed when the information exponential decay rate `decay_rate` is not zero.
     
     // initialize variables needed to compute regret
     total_cost = 0.0;
-    // total_cost: total cost incurred so far; used to compute regret
 
     normalization_sum = 0.0;
-    // normalization_sum: sum used to normalize "average cost". Given by
-    //      W[time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l))
-    // where t_k is the time at which we got the last update of the energies.
-    // For lambda=0.0 this is just the total number of updates.
 
     // initialize bounds
     min_cost = std::numeric_limits<double>::infinity();  // minimum value of the cost
