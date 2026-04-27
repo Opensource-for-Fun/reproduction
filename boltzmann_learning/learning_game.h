@@ -3,7 +3,7 @@
  * @description     
  * @author          nicewang <wangxiaonannice@gmail.com>
  * @createTime      2026-04-14
- * @lastModified    2026-04-21
+ * @lastModified    2026-04-27
  * Copyright Xiaonan (Nice) Wang. All rights reserved
 */
 
@@ -19,7 +19,6 @@
 #include <numeric>
 #include <stdexcept>
 #include <iomanip>
-#include <limits>
 #include <optional>
 #include <string>
 
@@ -51,30 +50,32 @@ public:
     /**
      * @brief Constructor for LearningGame class
      * @param action_set List of all possible actions.
+     * @param measurement_set (optional) List of all possible measurements.
      * Defaults to {}.
-     * @param measurement_set List of all possible measurements.
-     * @param finite_measurements indicates whether the set of measurements is discrete or continuous.
+     * @param finite_measurements (optional) indicates whether the set of measurements is discrete or continuous.
      * In the discrete case (True), the measurements will be elements of measurement_set.
      * In the continuous case (False), the measurements will be probabilities associated with the classes in
      * measurement_set.
-     * @param decay_rate Exponential decay rate for information in units of 1/time.
+     * Defaults to true.
+     * @param decay_rate (optional) Exponential decay rate for information in units of 1/time.
      * Specifically, information decays as
      *                         exp(-decay_rate * time)
      *                         (0.0 means no decay).
      * Defaults to 0.0.
-     * @param inverse_temperature Inverse of thermodynamic temperature
+     * @param inverse_temperature (optional) Inverse of thermodynamic temperature
      * for the Boltzmann distribution.
      * Defaults to 0.01.
-     * @param seed for action random number generator.
+     * @param seed (optional) for action random number generator.
      * When None, a nondeterministic seed will be generated.
-     * Defaults to None.
+     * Defaults to None (nullopt).
      * @param time_bound The max time between samples, only used to compute regret, though there are
      * other (better) ways to do so in general without this (i.e. compute the regret after one time step).
      * Defaults to 1.0.
-     * @param compute_entropy
-     *          True computes the entropy, 
-     *          False sets it to nan. 
-     *          Entropy for infinite measurement case is particularly slow to compute
+     * @param compute_entropy (optional)
+     * True computes the entropy, 
+     * False sets it to nan. 
+     * Entropy for infinite measurement case is particularly slow to compute
+     * Defaults to true.
      */
     LearningGame(
         std::vector<A> action_set,
@@ -82,7 +83,7 @@ public:
         bool finite_measurements = true,
         double decay_rate = 0.0,
         double inverse_temperature = 0.01,
-        std::optional<unsigned int> seed = std::nullopt,
+        std::optional<std::uint32_t> seed = std::nullopt,
         double time_bound = 1.0,
         bool compute_entropy = true
     );
@@ -150,22 +151,28 @@ public:
     std::map<M, std::map<A, double>> get_energy() const;
 
 private:
-    std::vector<A> _action_set;
-    size_t m_actions;
-    std::vector<M> _measurement_set;
-    bool finite_measurements;
-    double decay_rate;
-    double inverse_temperature;
-    std::mt19937 rng;
-    double time_bound;
+    std::vector<A> _action_set;              // set of all possible actions
+    size_t m_actions;                        // length of action set
+    std::vector<M> _measurement_set;         // set of all possible measurements
+    bool finite_measurements;                // indicates whether the measurements are finite/discrete or continuous
+    double decay_rate;                       // exponential decay rate for information in units of 1/time
+    double inverse_temperature;              // inverse of thermodynamic temperature for the Boltzmann distribution
+    std::mt19937 rng;                        // random number generator to select actions
+    double time_bound;                       // short term bound on the time gap between samples (referred to as \mu_0 in the paper)
     bool compute_entropy;
 
-    std::map<M, std::map<A, double>> energy;
-    double time_update;
-    double total_cost;
-    double normalization_sum;
-    double min_cost;
-    double max_cost;
+    std::map<M, std::map<A, double>> energy; // energy[y][a]: energy associated with action a and measurements y
+                                             //      E[y][a,time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l)) cost[y,a,time_l]
+                                             //      where t_k is the time at which we got the last update of the energies.
+    double time_update;                      // time at which the energies were updates last. 
+                                             // Only needed when the information exponential decay rate `decay_rate` is not zero.
+    double total_cost;                       // total cost incurred so far; used to compute regret
+    double normalization_sum;                // normalization_sum: sum used to normalize "average cost". Given by
+                                             //      W[time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l))
+                                             // where t_k is the time at which we got the last update of the energies.
+                                             // For lambda=0.0 this is just the total number of updates.
+    double min_cost;                         // minimum value of the cost
+    double max_cost;                         // maximum value of the cost
 };
 
 /**

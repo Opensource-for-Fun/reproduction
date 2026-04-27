@@ -3,13 +3,14 @@
  * @description     LearningGame Implementation
  * @author          nicewang <wangxiaonannice@gmail.com>
  * @createTime      2026-04-25
- * @lastModified    2026-04-25
+ * @lastModified    2026-04-27
  * Copyright Xiaonan (Nice) Wang. All rights reserved
 */
 
 #include "learning_game.h"
 
-using namespace std;
+#include <limits>
+
 
 // Define the extern DEBUG variable declared in the header
 const bool DEBUG = false;
@@ -17,10 +18,10 @@ const bool DEBUG = false;
 // ---------------------------------------------------------
 // Helper function implementation
 // ---------------------------------------------------------
-int get_random_integer(mt19937& rng_engine, const vector<double>& p) {
+int get_random_integer(std::mt19937& rng_engine, const std::vector<double>& p) {
     // std::discrete_distribution exactly mimics the cumulative sum 
     // and uniform random choice logic from the Python code.
-    discrete_distribution<int> dist(p.begin(), p.end());
+    std::discrete_distribution<int> dist(p.begin(), p.end());
     return dist(rng_engine);
 }
 
@@ -30,12 +31,12 @@ int get_random_integer(mt19937& rng_engine, const vector<double>& p) {
 
 template <typename A, typename M>
 LearningGame<A, M>::LearningGame(
-    vector<A> action_set,
-    vector<M> measurement_set,
+    std::vector<A> action_set,
+    std::vector<M> measurement_set,
     bool finite_measurements,
     double decay_rate,
     double inverse_temperature,
-    optional<unsigned int> seed,
+    std::optional<std::uint32_t> seed,
     double time_bound,
     bool compute_entropy
 ) : 
@@ -48,20 +49,22 @@ LearningGame<A, M>::LearningGame(
     compute_entropy(compute_entropy) 
 {
     // parameters
+
     m_actions = _action_set.size();
 
     // If measurement set is not provided, initialize with a default constructed element
     if (measurement_set.empty()) {
         _measurement_set.push_back(M{}); 
     } else {
-        _measurement_set = measurement_set;
+        _measurement_set = std::move(measurement_set);
     }
+    // TODO: add check to make sure each list above has no duplicates
 
     // Initialize random number generator
     if (seed.has_value()) {
         rng.seed(seed.value());
     } else {
-        random_device rd;
+        std::random_device rd;
         rng.seed(rd());
     }
 
@@ -70,22 +73,40 @@ LearningGame<A, M>::LearningGame(
 
 template <typename A, typename M>
 void LearningGame<A, M>::reset() {
+
+    // initialize energies
     energy.clear();
-    for (const auto& m : _measurement_set) {
+    for (const auto& y : _measurement_set) {
         for (const auto& a : _action_set) {
-            energy[m][a] = 0.0;
+            energy[y][a] = 0.0;
         }
     }
+    // energy[y][a]: energy associated with action a and measurements y
+    //      E[y][a,time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l)) cost[y,a,time_l]
+    //      where t_k is the time at which we got the last update of the energies.
 
+    // initialize time of last update for the energies
     time_update = 0.0;
+    // time_update: time at which the energies were updates last. 
+    // Only needed when the information exponential decay rate `decay_rate` is not zero.
+    
+    // initialize variables needed to compute regret
     total_cost = 0.0;
+    // total_cost: total cost incurred so far; used to compute regret
+
     normalization_sum = 0.0;
-    min_cost = numeric_limits<double>::infinity();
-    max_cost = -numeric_limits<double>::infinity();
+    // normalization_sum: sum used to normalize "average cost". Given by
+    //      W[time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l))
+    // where t_k is the time at which we got the last update of the energies.
+    // For lambda=0.0 this is just the total number of updates.
+
+    // initialize bounds
+    min_cost = std::numeric_limits<double>::infinity();  // minimum value of the cost
+    max_cost = -std::numeric_limits<double>::infinity(); // maximum value of the cost
 }
 
 template <typename A, typename M>
-pair<vector<double>, double> LearningGame<A, M>::get_Boltzmann_distribution(
+std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distribution(
     const MeasurementInput<M>& measurement_input, 
     double time
 ) {
@@ -138,10 +159,10 @@ pair<vector<double>, double> LearningGame<A, M>::get_Boltzmann_distribution(
         }
 
     } else {
-        if (!holds_alternative<map<M, double>>(measurement_input)) {
+        if (!holds_alternative<std::map<M, double>>(measurement_input)) {
             throw invalid_argument("finite_measurements is false, but single measurement provided instead of map.");
         }
-        auto measurement = get<map<M, double>>(measurement_input);
+        auto measurement = get<std::map<M, double>>(measurement_input);
 
         vector<double> measurement_values;
         double sum_meas = 0.0;
@@ -241,7 +262,7 @@ typename LearningGame<A, M>::ActionInfo LearningGame<A, M>::get_action(const Mea
 template <typename A, typename M>
 void LearningGame<A, M>::update_energies(
     const MeasurementInput<M>& measurement, 
-    const map<A, double>& costs, 
+    const std::map<A, double>& costs, 
     double time
 ) {
     // Update bounds
@@ -269,8 +290,8 @@ void LearningGame<A, M>::update_energies(
                 weight = 1.0;
             }
         } else {
-            if (holds_alternative<map<M, double>>(measurement)) {
-                auto meas_map = get<map<M, double>>(measurement);
+            if (holds_alternative<std::map<M, double>>(measurement)) {
+                auto meas_map = get<std::map<M, double>>(measurement);
                 if (meas_map.count(m)) {
                     weight = meas_map.at(m);
                 }
@@ -369,7 +390,7 @@ typename LearningGame<A, M>::RegretInfo LearningGame<A, M>::get_regret(bool disp
 }
 
 template <typename A, typename M>
-map<M, map<A, double>> LearningGame<A, M>::get_energy() const {
+std::map<M, std::map<A, double>> LearningGame<A, M>::get_energy() const {
     return energy;
 }
 
@@ -385,7 +406,7 @@ map<M, map<A, double>> LearningGame<A, M>::get_energy() const {
 
 // Common Type Instantiations:
 template class LearningGame<int, int>;
-template class LearningGame<string, string>;
-template class LearningGame<string, int>;
-template class LearningGame<int, string>;
+template class LearningGame<std::string, std::string>;
+template class LearningGame<std::string, int>;
+template class LearningGame<int, std::string>;
 template class LearningGame<double, double>;
