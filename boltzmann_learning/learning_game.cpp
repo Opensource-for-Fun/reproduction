@@ -32,7 +32,7 @@ int get_random_integer(std::mt19937& rng_engine, const std::vector<double>& p) {
 }
 
 // ---------------------------------------------------------
-// LearningGame
+// LearningGame Template
 // ---------------------------------------------------------
 
 template <typename A, typename M>
