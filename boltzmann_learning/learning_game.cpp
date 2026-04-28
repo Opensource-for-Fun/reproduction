@@ -161,7 +161,7 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             //          There is a trick:
             //                      Since we can not obtain the actual cost (i.e. J_{k}) when in get_Boltzmann_distribution, 
             //                              we use an approximation: "Regard E as cost" (mentioned before) -> use E instead of Cost            
-            //          Thus, the transition function of ("faked") E is:
+            //          Thus, the transition function of ("virtual") E is:
             //                      E = decay * (E - min_Energy) (i.e. e = decay * e, (decay = \gamma), e = e - min_e)
 
             // ========== Mathematical Proof and Physical Interpretation - End ==========
