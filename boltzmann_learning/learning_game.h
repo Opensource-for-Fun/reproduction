@@ -11,10 +11,8 @@
 #define LEARNING_GAME_H
 
 #include "decision_maker.hpp"
-#include <iostream>
+
 #include <random>
-#include <numeric>
-#include <iomanip>
 #include <optional>
 #include <cstdint>
 #include <utility>
@@ -123,7 +121,7 @@ public:
      * Overrides pure virtual from DecisionMaker.
      * @param measurement which must be an element of measurement_set
      * @param costs for each action
-     * @param time at which the measurement is made.
+     * @param time (optional) at which the measurement is made.
      * Defaults to 0.0.
      */
     void update_energies(
@@ -134,7 +132,7 @@ public:
 
     /**
      * @brief Computes regret based on after-the-fact costs in update_energies()
-     * @param display decides whether to display the regret (default: not display)
+     * @param display (optional) decides whether to display the regret (default: not display)
      * @return Regret
      */
     RegretInfo get_regret(bool display = false);
@@ -150,7 +148,7 @@ public:
 
 private:
     std::vector<A> _action_set;              // set of all possible actions
-    std::size_t m_actions;                        // length of action set
+    std::size_t m_actions;                   // length of action set
     std::vector<M> _measurement_set;         // set of all possible measurements
     bool finite_measurements;                // indicates whether the measurements are finite/discrete or continuous
     double decay_rate;                       // exponential decay rate for information in units of 1/time, a.k.a lambda

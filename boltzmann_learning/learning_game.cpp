@@ -12,7 +12,10 @@
 #include <limits>
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
+#include <iomanip>
 #include <string>
+#include <numeric>
 
 
 // Define the extern DEBUG variable declared in the header
@@ -157,7 +160,7 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             //                                  = \gamma E - \gamma \min_{a}[ E ]$$
             //          There is a trick:
             //                      Since we can not obtain the actual cost (i.e. J_{k}) when in get_Boltzmann_distribution, 
-            //                              we use an approximation: "Regard E as cost" (mentioned before)                
+            //                              we use an approximation: "Regard E as cost" (mentioned before) -> use E instead of Cost            
             //          Thus, the transition function of ("faked") E is:
             //                      E = decay * (E - min_Energy) (i.e. e = decay * e, (decay = \gamma), e = e - min_e)
 
@@ -172,7 +175,7 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         // Compute entropy safely (even if some probabilities become zero)
         if (compute_entropy) {
             double dot_product = 0.0;
-            for (std::size_t i = 0; i < probabilities.size(); ++i) {
+            for (std::size_t i = 0; i < probabilities.size(); i++) {
                 dot_product += probabilities[i] * exponent[i];
             }
             entropy = -dot_product / total + std::log(total);
@@ -222,8 +225,8 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         std::vector<std::vector<double>> pbar_a_c(_action_set.size(), std::vector<double>(_measurement_set.size()));
         double global_prob_sum = 0.0;
 
-        for (std::size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
-            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
+        for (std::size_t a_idx = 0; a_idx < _action_set.size(); a_idx++) {
+            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); m_idx++) {
                 double exp_val = -inverse_temperature * (energies_array[a_idx][m_idx] - min_energy[m_idx]);
                 double p = exp(exp_val);
                 pbar_a_c[a_idx][m_idx] = p;
@@ -232,16 +235,16 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         }
 
         // Normalize pbar_a_c
-        for (std::size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
-            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
+        for (std::size_t a_idx = 0; a_idx < _action_set.size(); a_idx++) {
+            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); m_idx++) {
                 pbar_a_c[a_idx][m_idx] /= global_prob_sum;
             }
         }
 
         // P(a_k = a | F_k)
         probabilities.assign(_action_set.size(), 0.0);
-        for (std::size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
-            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
+        for (std::size_t a_idx = 0; a_idx < _action_set.size(); a_idx++) {
+            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); m_idx++) {
                 probabilities[a_idx] += pbar_a_c[a_idx][m_idx] * measurement_values[m_idx];
             }
         }
@@ -252,7 +255,7 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         }
 
         if (total == 0.0) {
-            cerr << "WARNING: Probabilities sum to 0. Assigning uniform distribution.\n";
+            std::cerr << "WARNING: Probabilities sum to 0. Assigning uniform distribution.\n";
             for (double& p : probabilities) {
                 p = 1.0;
             }
@@ -295,46 +298,57 @@ void LearningGame<A, M>::update_energies(
     const std::map<A, double>& costs, 
     double time
 ) {
-    // Update bounds
+    // update bounds
     for (const auto& a : _action_set) {
         double cost_val = costs.at(a);
-        if (cost_val < min_cost) min_cost = cost_val;
-        if (cost_val > max_cost) max_cost = cost_val;
+        if (cost_val < min_cost) {
+            min_cost = cost_val;
+        }
+        if (cost_val > max_cost) {
+            max_cost = cost_val;
+        }
     }
 
-    double decay = exp(-decay_rate * (time - time_update));
+    double decay = std::exp(-decay_rate * (time - time_update));
 
-    // Update regrets
+    // update regrets
     double average_cost = 0.0;
     auto [probabilities, entropy] = get_Boltzmann_distribution(measurement, time);
-    for (std::size_t k = 0; k < _action_set.size(); ++k) {
+    for (std::size_t k = 0; k < _action_set.size(); k++) {
         average_cost += probabilities[k] * costs.at(_action_set[k]);
     }
     total_cost = decay * total_cost + average_cost;
 
+    // update energies
     for (const auto& m : _measurement_set) {
         double weight = 0.0;
 
         if (finite_measurements) {
-            if (holds_alternative<M>(measurement) && m == get<M>(measurement)) {
+            if (std::holds_alternative<M>(measurement) && m == std::get<M>(measurement)) {
                 weight = 1.0;
             }
         } else {
-            if (holds_alternative<std::map<M, double>>(measurement)) {
-                auto meas_map = get<std::map<M, double>>(measurement);
+            if (std::holds_alternative<std::map<M, double>>(measurement)) {
+                auto meas_map = std::get<std::map<M, double>>(measurement);
                 if (meas_map.count(m)) {
                     weight = meas_map.at(m);
                 }
             }
         }
 
+        // $$E_{a}(k+1) = e^{-\lambda \Delta t} \cdot (E_{a}(k) + J_{k})$$
+        // Attention: we use cost to calculte E there, this is different from `get_Boltzmann_distribution`
         for (const auto& a : _action_set) {
             energy[m][a] = decay * (energy[m][a] + costs.at(a) * weight);
         }
     }
 
-    // Update normalization_sum
+    // update normalization_sum
+    //      W[time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l))
+    //                = 1 + exp(-lambda(time_k-time_{k-1})) W[time_{k-1}]
     normalization_sum = decay * normalization_sum + 1.0;
+
+    // update time
     time_update = time;
 }
 
