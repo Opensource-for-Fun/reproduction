@@ -22,7 +22,7 @@
 const bool DEBUG = false;
 
 // ---------------------------------------------------------
-// Helper function implementation
+// Helper Function
 // ---------------------------------------------------------
 int get_random_integer(std::mt19937& rng_engine, const std::vector<double>& p) {
     // std::discrete_distribution exactly mimics the cumulative sum 
@@ -32,7 +32,7 @@ int get_random_integer(std::mt19937& rng_engine, const std::vector<double>& p) {
 }
 
 // ---------------------------------------------------------
-// LearningGame template class implementations
+// LearningGame
 // ---------------------------------------------------------
 
 template <typename A, typename M>
@@ -337,7 +337,7 @@ void LearningGame<A, M>::update_energies(
         }
 
         // $$E_{a}(k+1) = e^{-\lambda \Delta t} \cdot (E_{a}(k) + J_{k})$$
-        // Attention: we use cost to calculte E there, this is different from `get_Boltzmann_distribution`
+        // Attention: we use cost to calculte E there, this differs from `get_Boltzmann_distribution`
         for (const auto& a : _action_set) {
             energy[m][a] = decay * (energy[m][a] + costs.at(a) * weight);
         }
