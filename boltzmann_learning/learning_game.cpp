@@ -13,6 +13,7 @@
 #include <cmath>
 #include <variant>
 #include <stdexcept>
+#include <cstddef>
 
 
 // Define the extern DEBUG variable declared in the header
@@ -133,10 +134,36 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             }
         }
 
+        // p = softmax(E, -\beta), beta: inverse_temperature -> Boltzmann Distribution
         std::vector<double> exponent;
         double total = 0.0;
         for (double e : energies_array) {
             double exp_val = -inverse_temperature * (e - min_energy);
+
+            // ========== Mathematical Proof and Physical Interpretation ==========
+
+            // (e - min_energy) (actually should be (e-min_energy)/decay) is regarded as the distance between (cur_action, opt_action)
+            //      Specifically, energy could be regarded as cost:
+            //                    min(energy) regarded as min(cost)
+            //      the larger distance between cur_action and opt_action (i.e. E(cur) >> E(opt))
+            //      the higher possibility this action will be disused gradually by Boltzmann-Learning
+            //      thus, (e - min_energy) also corresponding to `Immediate Regret`
+
+            // Bellman (Optimal) Equation: $$V(s) = \max_{a} [ R(s, a) + \gamma V(s') ]$$
+            //          We regard energy as $$E = -V(s)$$, thus:
+            //                      $$E = -V(s) = -\max_{a} [ R(s, a) + \gamma V(s') ]
+            //                                  = -\gamma V(s') -\max_{a} [ R(s, a) ]
+            //                                  = \gamma E - \max_{a} [ R(s, a) ]
+            //                                  = \gamma E - \min_{a} [ cost(s, a) ]
+            //                                  = \gamma E - \gamma \min_{a}[ E ]$$
+            //          There is a trick:
+            //                      Since we can not obtain the actual cost (i.e. J_{k}) when in get_Boltzmann_distribution, 
+            //                              we use an approximation: "Regard E as cost" (mentioned before)                
+            //          Thus, the transition function of ("faked") E is:
+            //                      E = decay * (E - min_Energy) (i.e. e = decay * e, (decay = \gamma), e = e - min_e)
+
+            // ========== Mathematical Proof and Physical Interpretation - End ==========
+
             exponent.push_back(exp_val);
             double p = std::exp(exp_val);
             probabilities.push_back(p);
@@ -146,7 +173,7 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         // Compute entropy safely (even if some probabilities become zero)
         if (compute_entropy) {
             double dot_product = 0.0;
-            for (size_t i = 0; i < probabilities.size(); ++i) {
+            for (std::size_t i = 0; i < probabilities.size(); ++i) {
                 dot_product += probabilities[i] * exponent[i];
             }
             entropy = -dot_product / total + std::log(total);
@@ -194,8 +221,8 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         std::vector<std::vector<double>> pbar_a_c(_action_set.size(), std::vector<double>(_measurement_set.size()));
         double global_prob_sum = 0.0;
 
-        for (size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
-            for (size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
+        for (std::size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
+            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
                 double exp_val = -inverse_temperature * (energies_array[a_idx][m_idx] - min_energy[m_idx]);
                 double p = exp(exp_val);
                 pbar_a_c[a_idx][m_idx] = p;
@@ -204,16 +231,16 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         }
 
         // Normalize pbar_a_c
-        for (size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
-            for (size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
+        for (std::size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
+            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
                 pbar_a_c[a_idx][m_idx] /= global_prob_sum;
             }
         }
 
         // P(a_k = a | F_k)
         probabilities.assign(_action_set.size(), 0.0);
-        for (size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
-            for (size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
+        for (std::size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
+            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
                 probabilities[a_idx] += pbar_a_c[a_idx][m_idx] * measurement_values[m_idx];
             }
         }
@@ -254,8 +281,8 @@ template <typename A, typename M>
 typename LearningGame<A, M>::ActionInfo LearningGame<A, M>::get_action(const MeasurementInput<M>& measurement, double time) {
     auto [probabilities, entropy] = get_Boltzmann_distribution(measurement, time);
     
-    discrete_distribution<size_t> dist(probabilities.begin(), probabilities.end());
-    size_t action_index = dist(rng);
+    discrete_distribution<std::size_t> dist(probabilities.begin(), probabilities.end());
+    std::size_t action_index = dist(rng);
     
     return {_action_set[action_index], probabilities, entropy};
 }
@@ -278,7 +305,7 @@ void LearningGame<A, M>::update_energies(
     // Update regrets
     double average_cost = 0.0;
     auto [probabilities, entropy] = get_Boltzmann_distribution(measurement, time);
-    for (size_t k = 0; k < _action_set.size(); ++k) {
+    for (std::size_t k = 0; k < _action_set.size(); ++k) {
         average_cost += probabilities[k] * costs.at(_action_set[k]);
     }
     total_cost = decay * total_cost + average_cost;
@@ -311,7 +338,7 @@ void LearningGame<A, M>::update_energies(
 
 template <typename A, typename M>
 typename LearningGame<A, M>::RegretInfo LearningGame<A, M>::get_regret(bool display) {
-    double inverse_decay = exp(decay_rate * time_bound);
+    double inverse_decay = std::exp(decay_rate * time_bound);
 
     // Compute average cost
     double average_cost = 0.0;
@@ -322,7 +349,7 @@ typename LearningGame<A, M>::RegretInfo LearningGame<A, M>::get_regret(bool disp
     // Compute average minimum cost
     double minimum_cost = 0.0;
     for (const auto& m : _measurement_set) {
-        double mn = numeric_limits<double>::infinity();
+        double mn = std::numeric_limits<double>::infinity();
         for (const auto& a : _action_set) {
             if (energy[m][a] < mn) {
                 mn = inverse_decay * energy[m][a];
@@ -341,20 +368,20 @@ typename LearningGame<A, M>::RegretInfo LearningGame<A, M>::get_regret(bool disp
     double J0 = min_cost;
     double delta = 0.0;
     if (max_cost != min_cost) {
-        delta = (exp(inverse_temperature * (J0 - min_cost)) - exp(inverse_temperature * (J0 - max_cost))) 
+        delta = (std::exp(inverse_temperature * (J0 - min_cost)) - std::exp(inverse_temperature * (J0 - max_cost))) 
                 / (inverse_temperature * (max_cost - min_cost));
     } else {
-        delta = exp(inverse_temperature * (J0 - min_cost)); // Prevent division by 0
+        delta = std::exp(inverse_temperature * (J0 - min_cost)); // Prevent division by 0
     }
     
-    double delta0 = (exp(inverse_temperature * (J0 - min_cost)) - 1.0) / inverse_temperature - J0 + delta * min_cost;
+    double delta0 = (std::exp(inverse_temperature * (J0 - min_cost)) - 1.0) / inverse_temperature - J0 + delta * min_cost;
     double alpha1 = 1.0 / delta;
 
     double cardinality_term;
     if (finite_measurements) {
-        cardinality_term = _measurement_set.size() * log(_action_set.size());
+        cardinality_term = _measurement_set.size() * std::log(_action_set.size());
     } else {
-        cardinality_term = _measurement_set.size() * log(_measurement_set.size() * _action_set.size());
+        cardinality_term = _measurement_set.size() * std::log(_measurement_set.size() * _action_set.size());
     }
 
     double alpha0 = delta0;
@@ -366,24 +393,24 @@ typename LearningGame<A, M>::RegretInfo LearningGame<A, M>::get_regret(bool disp
     double regret_bound = cost_bound - minimum_cost;
 
     if (DEBUG) {
-        cout << fixed << setprecision(6);
-        cout << "  J0     = " << setw(10) << J0 
+        std::cout << fixed << setprecision(6);
+        std::cout << "  J0     = " << setw(10) << J0 
              << "  delta   = " << setw(10) << delta 
              << "  delta0 = " << setw(10) << delta0 << "\n";
-        cout << "  alpha1 = " << setw(10) << alpha1 
+        std::cout << "  alpha1 = " << setw(10) << alpha1 
              << "  alpha0 = " << setw(10) << alpha0 
              << "  alpha1*alpha0 = " << setw(10) << (alpha0 * alpha1) << "\n";
     }
 
     if (display) {
-        cout << fixed << setprecision(6);
-        cout << "  normalization_sum = " << setw(13) << normalization_sum 
+        std::cout << fixed << setprecision(6);
+        std::cout << "  normalization_sum = " << setw(13) << normalization_sum 
              << "  alpha1        = " << setw(13) << alpha1
              << "  alpha0        = " << setw(13) << alpha0 << "\n";
-        cout << "  minimum_cost      = " << setw(13) << minimum_cost 
+        std::cout << "  minimum_cost      = " << setw(13) << minimum_cost 
              << "  average_cost = " << setw(13) << average_cost
              << "  cost_bound   = " << setw(13) << cost_bound << "\n";
-        cout << "                                      regret       = " << setw(13) << regret
+        std::cout << "                                      regret       = " << setw(13) << regret
              << "  regret_bound = " << setw(13) << regret_bound << "\n";
     }
 
