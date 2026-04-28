@@ -40,7 +40,7 @@ public:
     /**
      * @brief Gets (optimal) action for a given measurement
      * @param measurement Measurement input
-     * @param time Time for the desired action. Defaults to 0.0.
+     * @param time (optional) Time for the desired action. Defaults to 0.0.
      * @return ActionInfo struct containing action, probabilities, and entropy
      */
     virtual ActionInfo get_action(const MeasurementInput<M>& measurement, double time = 0.0) = 0;
@@ -49,7 +49,7 @@ public:
      * @brief Updates energies based on after-the-fact costs
      * @param measurement Measurement input
      * @param costs Costs mapping for each action
-     * @param time The time at which the measurement is made. Defaults to 0.0.
+     * @param time (optional) The time at which the measurement is made. Defaults to 0.0.
      */
     virtual void update_energies(
         const MeasurementInput<M>& measurement, 

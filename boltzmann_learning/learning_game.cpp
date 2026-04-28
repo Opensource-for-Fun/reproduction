@@ -80,7 +80,7 @@ LearningGame<A, M>::LearningGame(
 template <typename A, typename M>
 void LearningGame<A, M>::reset() {
 
-    // initialize energies
+    // Initialize energies
     energy.clear();
     for (const auto& y : _measurement_set) {
         for (const auto& a : _action_set) {
@@ -88,15 +88,15 @@ void LearningGame<A, M>::reset() {
         }
     }
 
-    // initialize time of last update for the energies
+    // Initialize time of last update for the energies
     time_update = 0.0;
     
-    // initialize variables needed to compute regret
+    // Initialize variables needed to compute regret
     total_cost = 0.0;
 
     normalization_sum = 0.0;
 
-    // initialize bounds
+    // Initialize bounds
     min_cost = std::numeric_limits<double>::infinity();  // minimum value of the cost
     max_cost = -std::numeric_limits<double>::infinity(); // maximum value of the cost
 }
@@ -106,7 +106,7 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
     const MeasurementInput<M>& measurement_input, 
     double time
 ) {
-    // compute Boltzmann distribution
+    // Compute Boltzmann distribution
     
     // From the equations it may not be immediately clear why the decay is included here. 
     // It is because at the time of selecting actions, 
@@ -147,8 +147,8 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             // (e - min_energy) (actually should be (e-min_energy)/decay) is regarded as the distance between (cur_action, opt_action)
             //      Specifically, energy could be regarded as cost:
             //                    min(energy) regarded as min(cost)
-            //      the larger distance between cur_action and opt_action (i.e. E(cur) >> E(opt))
-            //      the higher possibility this action will be disused gradually by Boltzmann-Learning
+            //      the larger distance between cur_action and opt_action (i.e. E(cur) >> E(opt)),
+            //      the higher possibility this action will be disused gradually by Boltzmann-Learning,
             //      thus, (e - min_energy) also corresponding to `Immediate Regret`
 
             // Bellman (Optimal) Equation: $$V(s) = \max_{a} [ R(s, a) + \gamma V(s') ]$$
@@ -298,7 +298,7 @@ void LearningGame<A, M>::update_energies(
     const std::map<A, double>& costs, 
     double time
 ) {
-    // update bounds
+    // Update bounds
     for (const auto& a : _action_set) {
         double cost_val = costs.at(a);
         if (cost_val < min_cost) {
@@ -311,7 +311,7 @@ void LearningGame<A, M>::update_energies(
 
     double decay = std::exp(-decay_rate * (time - time_update));
 
-    // update regrets
+    // Update regrets
     double average_cost = 0.0;
     auto [probabilities, entropy] = get_Boltzmann_distribution(measurement, time);
     for (std::size_t k = 0; k < _action_set.size(); k++) {
@@ -319,7 +319,7 @@ void LearningGame<A, M>::update_energies(
     }
     total_cost = decay * total_cost + average_cost;
 
-    // update energies
+    // Update energies
     for (const auto& m : _measurement_set) {
         double weight = 0.0;
 
@@ -343,22 +343,25 @@ void LearningGame<A, M>::update_energies(
         }
     }
 
-    // update normalization_sum
+    // Update normalization_sum
     //      W[time_k] = \sum_{l=1}^k  exp(-lambda(time_k-time_l))
     //                = 1 + exp(-lambda(time_k-time_{k-1})) W[time_{k-1}]
     normalization_sum = decay * normalization_sum + 1.0;
 
-    // update time
+    // Update time
     time_update = time;
 }
 
 template <typename A, typename M>
 typename LearningGame<A, M>::RegretInfo LearningGame<A, M>::get_regret(bool display) {
+    
+    // decay (depends on t_{k+1} but can be bounded by time_bound)
     double inverse_decay = std::exp(decay_rate * time_bound);
 
     // Compute average cost
     double average_cost = 0.0;
     if (normalization_sum > 0) {
+        // TODO: Why `inverse_decay`? @nicewang (for all subsequent `inverse_decay`s)
         average_cost = inverse_decay * total_cost / normalization_sum;
     }
 
@@ -381,7 +384,7 @@ typename LearningGame<A, M>::RegretInfo LearningGame<A, M>::get_regret(bool disp
     double regret = average_cost - minimum_cost;
 
     // Compute bounds
-    double J0 = min_cost;
+    double J0 = min_cost; // TODO: there may be a better choice?
     double delta = 0.0;
     if (max_cost != min_cost) {
         delta = (std::exp(inverse_temperature * (J0 - min_cost)) - std::exp(inverse_temperature * (J0 - max_cost))) 
@@ -409,25 +412,25 @@ typename LearningGame<A, M>::RegretInfo LearningGame<A, M>::get_regret(bool disp
     double regret_bound = cost_bound - minimum_cost;
 
     if (DEBUG) {
-        std::cout << fixed << setprecision(6);
-        std::cout << "  J0     = " << setw(10) << J0 
-             << "  delta   = " << setw(10) << delta 
-             << "  delta0 = " << setw(10) << delta0 << "\n";
-        std::cout << "  alpha1 = " << setw(10) << alpha1 
-             << "  alpha0 = " << setw(10) << alpha0 
-             << "  alpha1*alpha0 = " << setw(10) << (alpha0 * alpha1) << "\n";
+        std::cout << fixed << std::setprecision(6);
+        std::cout << "  J0     = " << std::setw(10) << J0 
+             << "  delta   = " << std::setw(10) << delta 
+             << "  delta0 = " << std::setw(10) << delta0 << "\n";
+        std::cout << "  alpha1 = " << std::setw(10) << alpha1 
+             << "  alpha0 = " << std::setw(10) << alpha0 
+             << "  alpha1*alpha0 = " << std::setw(10) << (alpha0 * alpha1) << "\n";
     }
 
     if (display) {
-        std::cout << fixed << setprecision(6);
-        std::cout << "  normalization_sum = " << setw(13) << normalization_sum 
-             << "  alpha1        = " << setw(13) << alpha1
-             << "  alpha0        = " << setw(13) << alpha0 << "\n";
-        std::cout << "  minimum_cost      = " << setw(13) << minimum_cost 
-             << "  average_cost = " << setw(13) << average_cost
-             << "  cost_bound   = " << setw(13) << cost_bound << "\n";
-        std::cout << "                                      regret       = " << setw(13) << regret
-             << "  regret_bound = " << setw(13) << regret_bound << "\n";
+        std::cout << fixed << std::setprecision(6);
+        std::cout << "  normalization_sum = " << std::setw(13) << normalization_sum 
+             << "  alpha1        = " << std::setw(13) << alpha1
+             << "  alpha0        = " << std::setw(13) << alpha0 << "\n";
+        std::cout << "  minimum_cost      = " << std::setw(13) << minimum_cost 
+             << "  average_cost = " << std::setw(13) << average_cost
+             << "  cost_bound   = " << std::setw(13) << cost_bound << "\n";
+        std::cout << "                                      regret       = " << std::setw(13) << regret
+             << "  regret_bound = " << std::setw(13) << regret_bound << "\n";
     }
 
     return {average_cost, minimum_cost, cost_bound, regret, regret_bound, normalization_sum, alpha1, alpha1 * alpha0};
