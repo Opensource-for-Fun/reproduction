@@ -12,13 +12,13 @@
 
 #include "decision_maker.hpp"
 #include <iostream>
-#include <vector>
-#include <map>
 #include <random>
 #include <numeric>
 #include <iomanip>
 #include <optional>
-#include <string>
+#include <cstdint>
+#include <utility>
+#include <cstddef>
 
 extern const bool DEBUG;
 
@@ -109,7 +109,7 @@ public:
      * @brief Gets (optimal) action for a given measurement. 
      * Overrides pure virtual from DecisionMaker.
      * @param measurement which must be an element of measurement_set
-     * @param time for the desired distribution. 
+     * @param time (optional) for the desired distribution. 
      * Defaults to 0.0.
      * @return Optimal Action
      */
@@ -150,7 +150,7 @@ public:
 
 private:
     std::vector<A> _action_set;              // set of all possible actions
-    size_t m_actions;                        // length of action set
+    std::size_t m_actions;                        // length of action set
     std::vector<M> _measurement_set;         // set of all possible measurements
     bool finite_measurements;                // indicates whether the measurements are finite/discrete or continuous
     double decay_rate;                       // exponential decay rate for information in units of 1/time, a.k.a lambda

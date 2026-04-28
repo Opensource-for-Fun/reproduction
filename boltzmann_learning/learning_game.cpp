@@ -11,9 +11,8 @@
 
 #include <limits>
 #include <cmath>
-#include <variant>
 #include <stdexcept>
-#include <cstddef>
+#include <string>
 
 
 // Define the extern DEBUG variable declared in the header
@@ -284,10 +283,10 @@ template <typename A, typename M>
 typename LearningGame<A, M>::ActionInfo LearningGame<A, M>::get_action(const MeasurementInput<M>& measurement, double time) {
     auto [probabilities, entropy] = get_Boltzmann_distribution(measurement, time);
     
-    discrete_distribution<std::size_t> dist(probabilities.begin(), probabilities.end());
+    std::discrete_distribution<std::size_t> dist(probabilities.begin(), probabilities.end());
     std::size_t action_index = dist(rng);
     
-    return {_action_set[action_index], probabilities, entropy};
+    return {_action_set[action_index], std::move(probabilities), entropy};
 }
 
 template <typename A, typename M>

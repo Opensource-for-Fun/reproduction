@@ -26,7 +26,7 @@ class DecisionMaker {
 public:
     // Struct for returning multiple values from get_action.
     struct ActionInfo {
-        A action;                           // Action itself
+        A action;                           // Action (stochastically selected according to probabilities)
         std::vector<double> probabilities;  // Probability distribution used to select action
         double entropy;                     // Distribution's entropy
     };
