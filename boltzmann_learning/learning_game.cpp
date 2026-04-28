@@ -152,7 +152,7 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             // Bellman (Optimal) Equation: $$V(s) = \max_{a} [ R(s, a) + \gamma V(s') ]$$
             //          We regard energy as $$E = -V(s)$$, thus:
             //                      $$E = -V(s) = -\max_{a} [ R(s, a) + \gamma V(s') ]
-            //                                  = -\gamma V(s') -\max_{a} [ R(s, a) ]
+            //                                  = -\gamma V(s') - \max_{a} [ R(s, a) ]
             //                                  = \gamma E - \max_{a} [ R(s, a) ]
             //                                  = \gamma E - \min_{a} [ cost(s, a) ]
             //                                  = \gamma E - \gamma \min_{a}[ E ]$$
@@ -190,9 +190,9 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         if (!std::holds_alternative<std::map<M, double>>(measurement_input)) {
             throw srd::invalid_argument("finite_measurements is false, but single measurement provided instead of map.");
         }
-        auto measurement = get<std::map<M, double>>(measurement_input);
+        auto measurement = std::get<std::map<M, double>>(measurement_input);
 
-        vector<double> measurement_values;
+        std::vector<double> measurement_values;
         double sum_meas = 0.0;
         for (const auto& m : _measurement_set) {
             double val = measurement.count(m) ? measurement.at(m) : 0.0;
@@ -200,16 +200,16 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             sum_meas += val;
         }
 
-        if (abs(sum_meas - 1.0) > 1e-6) {
-            throw invalid_argument("Measurement should sum to 1.0 with precision of 1e-6.");
+        if (std::abs(sum_meas - 1.0) > 1e-6) {
+            throw std::invalid_argument("Measurement should sum to 1.0 with precision of 1e-6.");
         }
 
         // energies_array size: num_actions x num_measurements
         std::vector<std::vector<double>> energies_array(_action_set.size(), vector<double>(_measurement_set.size()));
-        std::vector<double> min_energy(_measurement_set.size(), numeric_limits<double>::infinity());
+        std::vector<double> min_energy(_measurement_set.size(), std::numeric_limits<double>::infinity());
 
-        for (size_t a_idx = 0; a_idx < _action_set.size(); ++a_idx) {
-            for (size_t m_idx = 0; m_idx < _measurement_set.size(); ++m_idx) {
+        for (std::size_t a_idx = 0; a_idx < _action_set.size(); a_idx++) {
+            for (std::size_t m_idx = 0; m_idx < _measurement_set.size(); m_idx++) {
                 double e = decay * energy[_measurement_set[m_idx]][_action_set[a_idx]];
                 energies_array[a_idx][m_idx] = e;
                 if (e < min_energy[m_idx]) {
@@ -218,6 +218,8 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
             }
         }
 
+        // $$P(a_{k} = a, c_{k} = c | F_{k}) =$$
+        // $$exp(-\beta  E[a,c]) / \sum_{\bar{a},\bar{c}} exp(-\beta  E[\bar{a},\bar{c}])$$
         std::vector<std::vector<double>> pbar_a_c(_action_set.size(), std::vector<double>(_measurement_set.size()));
         double global_prob_sum = 0.0;
 
@@ -263,6 +265,7 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         }
 
         if (compute_entropy) {
+            // Shannon Entropy
             entropy = 0.0;
             for (double p : probabilities) {
                 if (p > 0.0) {
