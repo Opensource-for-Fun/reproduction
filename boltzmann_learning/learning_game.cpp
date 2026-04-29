@@ -142,29 +142,16 @@ std::pair<std::vector<double>, double> LearningGame<A, M>::get_Boltzmann_distrib
         for (double e : energies_array) {
             double exp_val = -inverse_temperature * (e - min_energy);
 
-            // ========== Mathematical Proof and Physical Interpretation ==========
+            // ==================== Physical Interpretation ====================
 
-            // (e - min_energy) (actually should be (e-min_energy)/decay) is regarded as the distance between (cur_action, opt_action)
-            //      Specifically, energy could be regarded as cost:
-            //                    min(energy) regarded as min(cost)
+            // (e - min_energy) is regarded as the distance between [cur_action, opt_action]
             //      the larger distance between cur_action and opt_action (i.e. E(cur) >> E(opt)),
             //      the higher possibility this action will be disused gradually by Boltzmann-Learning,
-            //      thus, (e - min_energy) also corresponding to `Immediate Regret`
+            //      thus, (e - min_energy) also could be regarded as `Immediate Regret`
+            // Finally, the energy transition function of this "Shift Invariance Energr-based Model" is:
+            //       E = decay * (E - min_Energy) (in the code: e = decay * e, (decay = \gamma), e = e - min_e)
 
-            // Bellman (Optimal) Equation: $$V(s) = \max_{a} [ R(s, a) + \gamma V(s') ]$$
-            //          We regard energy as $$E = -V(s)$$, thus:
-            //                      $$E = -V(s) = -\max_{a} [ R(s, a) + \gamma V(s') ]
-            //                                  = -\gamma V(s') - \max_{a} [ R(s, a) ]
-            //                                  = \gamma E - \max_{a} [ R(s, a) ]
-            //                                  = \gamma E - \min_{a} [ cost(s, a) ]
-            //                                  = \gamma E - \gamma \min_{a}[ E ]$$
-            //          There is a trick:
-            //                      Since we can not obtain the actual cost (i.e. J_{k}) when in get_Boltzmann_distribution, 
-            //                              we use an approximation: "Regard E as cost" (mentioned before) -> use E instead of Cost            
-            //          Thus, the transition function of ("faked") E is:
-            //                      E = decay * (E - min_Energy) (i.e. e = decay * e, (decay = \gamma), e = e - min_e)
-
-            // ========== Mathematical Proof and Physical Interpretation - End ==========
+            // ==================== Physical Interpretation - End ====================
 
             exponent.push_back(exp_val);
             double p = std::exp(exp_val);
